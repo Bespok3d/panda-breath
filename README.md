@@ -6,7 +6,6 @@ on any Klipper printer (not U1-specific). Solo repo - publishes a single atom in
 ```text
 panda-breath/
   panda-breath/         # the plugin (manifest + files + doc)
-  scripts/{pack.sh,generate-atom.mjs}
   .github/workflows/release.yml
 ```
 
@@ -14,10 +13,22 @@ The Klipper module `panda_breath.py` is vendored from
 [justinh-rahb/pandabreath-klipper](https://github.com/justinh-rahb/pandabreath-klipper) (GPL-3.0, pinned
 commit). See the plugin's `doc/README.md` for credits.
 
+## Build locally
+
+Needs Node.js 20+. Builds run through the shared `Bespok3d/b3-builder` tool:
+
+```sh
+npm install github:Bespok3d/b3-builder
+npx b3-builder build --source ./panda-breath --atom-repo Bespok3d/panda-breath
+# -> dist/panda-breath-<ver>.b3 + dist/panda-breath.atom.json
+```
+
 ## Releasing
 
-Bump `panda-breath/manifest.json` `version` and push to `main`. CI packs the `.b3`, cuts a release,
-generates the atom, and commits it into `Bespok3d/main-index/atoms/`. Secret: `MAIN_INDEX_TOKEN`.
+Bump `panda-breath/manifest.json` `version` and push to `main`. CI runs the `Bespok3d/b3-builder`
+Action, which packs the `.b3` and cuts a release; the `register-atoms` action from
+`Bespok3d/main-index` then registers the atom. This repo contributes atoms only and publishes no list
+of its own. Secret: `MAIN_INDEX_TOKEN` (contents:write on main-index). Signing deferred.
 
 ## Maintainership
 
