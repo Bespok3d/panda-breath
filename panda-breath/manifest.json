@@ -2,6 +2,7 @@
   "name": "panda-breath",
   "title": "Panda Breath",
   "version": "0.1.0",
+  "author": "bespoked",
   "description": "Drives a BIQU Panda Breath chamber-heating device as a standard Klipper heater. Adds a Klipper extra (panda_breath.py) that talks to the Panda Breath over its OEM WebSocket protocol, plus a [heater_generic] so you control chamber heat from the web UI and slicer like any other heater. Point it at your Panda Breath's host. The Panda Breath hardware is separate. Experimental: not yet verified on a physical device.",
   "tagline": "Chamber heating with a BIQU Panda Breath, as a Klipper heater.",
   "category": "sensors",
