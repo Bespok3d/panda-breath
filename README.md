@@ -19,6 +19,24 @@ The Klipper module `panda_breath.py` is vendored from
 [justinh-rahb/pandabreath-klipper](https://github.com/justinh-rahb/pandabreath-klipper) (GPL-3.0, pinned
 commit). See the plugin's `doc/README.md` for credits.
 
+## Nobody here has a Panda Breath
+
+No Panda Breath has ever been on the bench that built this plugin: the Klipper module comes from upstream and is stdlib only, and the rest is
+reasoned from the OEM WebSocket protocol rather than observed. Treat it as a beta, and expect to be
+the first person to run it for real.
+
+If you own one, these are the things nobody has confirmed:
+
+1. The plugin installs and Klipper restarts cleanly with the `[heater_generic]` section in place.
+2. The heater appears in Fluidd or Mainsail and accepts a target temperature.
+3. The reported chamber temperature tracks what the Panda Breath's own display says.
+4. Setting a target actually turns the heater on, and clearing it turns the heater off.
+5. The plugin survives the Panda Breath going offline and coming back, without wedging Klipper.
+
+Report what you find at <https://github.com/Bespok3d/panda-breath/issues>, one issue per thing, and
+say which printer, which Klipper version, and which Panda Breath firmware you are on. A report that
+it simply worked is worth as much as a bug: it is what removes this section.
+
 ## Build locally
 
 Needs Node.js 20+. Builds run through the shared `Bespok3d/b3-builder` tool:
