@@ -36,6 +36,10 @@
 #   mqtt_broker: 192.168.1.x
 #   mqtt_port: 1883
 #   mqtt_topic_prefix: panda-breath
+#
+# Originally panda_breath.py from pandabreath-klipper (justinh-rahb), GPL-3.0, at commit
+# 2fc8c03b918519060f0a2cc6b40a56fbc232e74f.
+# Modified by the Bespok3d project on 2026-07-28: a dash character was normalised.
 
 import collections
 import base64
