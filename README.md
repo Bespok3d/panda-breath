@@ -1,5 +1,11 @@
 # panda-breath
 
+[![licence](https://img.shields.io/badge/licence-GPL--3.0-blue)](LICENSE)
+[![release](https://img.shields.io/github/v/release/Bespok3d/panda-breath)](https://github.com/Bespok3d/panda-breath/releases)
+[![version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FBespok3d%2Fpanda-breath%2Fmain%2Fpanda-breath%2Fmanifest.json&query=%24.version&label=version&color=blue)](panda-breath/manifest.json)
+![printer](https://img.shields.io/badge/printer-Snapmaker%20U1-informational)
+![stock firmware](https://img.shields.io/badge/stock%20firmware-no%20flashing-brightgreen)
+
 A standalone Bespok3d plugin: drives a BIQU Panda Breath chamber heater as a standard Klipper heater
 on any Klipper printer (not U1-specific). Solo repo - publishes a single atom into `Bespok3d/main-index`.
 
