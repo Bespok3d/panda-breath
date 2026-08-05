@@ -2,7 +2,7 @@
   "name": "panda-breath",
   "title": "Panda Breath",
   "version": "0.1.1",
-  "license": "GPL-3.0-only",
+  "license": "https://github.com/Bespok3d/panda-breath/blob/dev/panda-breath/doc/LICENSE",
   "author": "bespoked",
   "description": "Drives a BIQU Panda Breath chamber-heating device as a standard Klipper heater. Adds a Klipper extra (panda_breath.py) that talks to the Panda Breath over its OEM WebSocket protocol, plus a [heater_generic] so you control chamber heat from the web UI and slicer like any other heater. Point it at your Panda Breath's host. The Panda Breath hardware is separate. Experimental: we have no Panda Breath to test against, so it is unproven on the real device.",
   "tagline": "Chamber heating with a BIQU Panda Breath, as a Klipper heater.",
@@ -74,5 +74,6 @@
     ]
   },
   "conflict_resolutions": [],
-  "files": []
+  "files": [],
+  "attributions": "# Attributions - panda-breath\n\n**Plugin author:** justinh-rahb (BIQU / BIGTREETECH hardware), packaged by Bespok3d; Panda Breath support on the U1 was first done by @justinh-rahb in the Extended Firmware overlay `37-feature-panda-breath`\n\nDrives a BIQU Panda Breath chamber heater.\n\n| Upstream project | Author | Licence | Needed at runtime | Code ships in this package |\n| --- | --- | --- | --- | --- |\n| pandabreath-klipper | justinh-rahb | GPL-3.0 | yes | yes |\n| Panda Breath hardware | BIQU / BIGTREETECH | hardware | yes | no |\n\n`panda_breath.py` is shipped inside this plugin at pinned commit\n`2fc8c03b918519060f0a2cc6b40a56fbc232e74f`, unchanged apart from normalising a dash character.\nUpstream: https://github.com/justinh-rahb/pandabreath-klipper\n\nPorted from the Extended Firmware overlay `37-feature-panda-breath`, GPL-3.0, whose commits are by\npaxx12 and one further contributor recorded in that project's own history; the chamber-heater work is\ncredited to @justinh-rahb.\n"
 }
