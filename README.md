@@ -47,6 +47,9 @@ npx b3-builder build --source ./panda-breath --atom-repo Bespok3d/panda-breath
 # -> dist/panda-breath-<ver>.b3 + dist/panda-breath.atom.json
 ```
 
+Writing a plugin of your own? Start at the plugin documentation:
+[Bespok3d/b3-builder/doc](https://github.com/Bespok3d/b3-builder/tree/main/doc).
+
 ## Releasing
 
 Bump `panda-breath/manifest.json` `version` and push the tag `plugin-<name>-v<version>` naming that
