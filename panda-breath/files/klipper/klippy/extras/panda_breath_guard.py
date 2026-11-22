@@ -76,13 +76,14 @@ class PandaBreathGuard:
         self.module = self.printer.load_object(config, "panda_breath")
         if not isinstance(self.module._transport, panda_breath._WebSocketTransport):
             raise config.error("panda_breath_guard needs [panda_breath] with firmware: stock")
-        self._read_timeouts(config)
+        self._read_options(config)
         self.watchdog = panda_breath_watchdog.DeviceWatchdog(self.module, self.hang_timeout)
         self.fault_reason = ""
         self.alarm_queue = collections.deque()
         self.pheaters = None
         self.heater = None
         self.heater_set_temp_before_guard = None
+        self.printer_chamber_sensor = None
         panda_breath_device_fixes.install(self.module, self.watchdog, self.alarm_queue)
         self.guard_timer = self.reactor.register_timer(self._guard_tick, self.reactor.NEVER)
         self.printer.register_event_handler("klippy:connect", self._handle_connect)
@@ -90,7 +91,8 @@ class PandaBreathGuard:
         self._register_commands()
         self._register_chamber_commands(config)
 
-    def _read_timeouts(self, config):
+    def _read_options(self, config):
+        self.use_u1_cavity_thermometer = config.getboolean("use_u1_cavity_thermometer", False)
         self.hang_timeout = config.getfloat(
             "hang_timeout", DEFAULT_HANG_TIMEOUT, minval=MIN_HANG_TIMEOUT)
         self.link_timeout = config.getfloat(
@@ -139,11 +141,19 @@ class PandaBreathGuard:
 
     def _handle_connect(self):
         self.pheaters = self.printer.lookup_object("heaters")
+        self.printer_chamber_sensor = self._lookup_printer_chamber_sensor()
         self.heater = self.pheaters.lookup_heater(self.module.name)
         self.heater_set_temp_before_guard = self.heater.set_temp
         self.heater.set_temp = self._guarded_set_temp
         self.reactor.update_timer(self.guard_timer, self.reactor.NOW)
         self.watchdog.start()
+
+    def _lookup_printer_chamber_sensor(self):
+        if not self.use_u1_cavity_thermometer:
+            return None
+        if panda_breath_chamber.U1_CAVITY_SENSOR not in self.pheaters.available_sensors:
+            raise self.printer.config_error(panda_breath_chamber.NO_U1_CAVITY_MESSAGE)
+        return self.printer.lookup_object(panda_breath_chamber.U1_CAVITY_SENSOR)
 
     def _handle_disconnect(self):
         self.watchdog.stop()
@@ -209,11 +219,21 @@ class PandaBreathGuard:
         gcmd.respond_info(
             "Panda Breath: fault cleared. A device that still reports an alarm latches it again")
 
+    def _chamber_target(self, gcmd):
+        """A target above the heater's max_temp is lowered to it, so the print is not cancelled."""
+        wanted_target = gcmd.get_float("S", 0., minval=0.)
+        if wanted_target <= self.heater.max_temp:
+            return wanted_target
+        # Not the "!!" error prefix: OctoPrint disconnects on it, and the print stops.
+        self.gcode.respond_info(
+            panda_breath_chamber.over_limit_warning(wanted_target, self.heater.max_temp))
+        return self.heater.max_temp
+
     def _cmd_m141(self, gcmd):
-        self.pheaters.set_temperature(self.heater, gcmd.get_float("S", 0., minval=0.))
+        self.pheaters.set_temperature(self.heater, self._chamber_target(gcmd))
 
     def _cmd_m191(self, gcmd):
-        wanted_target = gcmd.get_float("S", 0., minval=0.)
+        wanted_target = self._chamber_target(gcmd)
         self.pheaters.set_temperature(self.heater, wanted_target)
         if not wanted_target or self.printer.get_start_args().get("debugoutput") is not None:
             return
@@ -236,10 +256,21 @@ class PandaBreathGuard:
             klipper_shutdown=self.printer.is_shutdown(),
             fault_reason=self.fault_reason,
             heater_target=self.heater.get_temp(eventtime)[1],
-            still_heating=self.heater.check_busy(eventtime),
+            target_not_reached=self._chamber_target_not_reached(eventtime, wanted_target),
             waited_seconds=eventtime - started_at,
         )
         return panda_breath_chamber.wait_outcome(snapshot, wanted_target, self.heat_wait_timeout)
+
+    def _chamber_target_not_reached(self, eventtime, wanted_target):
+        """The wait ends when the Panda Breath or the printer's own thermometer gets there first."""
+        reached_by_printer = panda_breath_chamber.printer_chamber_reached(
+            self._printer_chamber_temp(eventtime), wanted_target)
+        return self.heater.check_busy(eventtime) and not reached_by_printer
+
+    def _printer_chamber_temp(self, eventtime):
+        if self.printer_chamber_sensor is None:
+            return None
+        return self.printer_chamber_sensor.get_temp(eventtime)[0]
 
     def _finish_wait(self, outcome, wanted_target):
         if outcome == panda_breath_chamber.FAULTED:

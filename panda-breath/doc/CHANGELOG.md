@@ -4,6 +4,10 @@
 
 - New: `M141` and `M191` set the chamber temperature from your slicer's start G-code. `M191` waits
   until the chamber is warm.
+- New: when the slicer asks for a chamber hotter than the Panda Breath allows (60 C), the print no
+  longer stops. The console shows a ⚠️ warning, the chamber is set to 60 C and the print goes on.
+- New: the **Also use the U1 cavity thermometer** setting (Snapmaker U1 only, off by default). When
+  on, `M191` goes on as soon as the Panda Breath or the U1 cavity thermometer reaches the target.
 - New: a broken sensor or heating element on the Panda Breath now stops the heat and shows a plain
   Klipper error. The error stays until you run `PANDA_BREATH_CLEAR_FAULT`.
 - New: if Klipper hangs, or the Panda Breath goes silent while heating, the plugin switches the heat

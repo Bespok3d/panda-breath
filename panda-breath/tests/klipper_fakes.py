@@ -52,6 +52,9 @@ class FakeConfig:
     def getint(self, option, default=MISSING):
         return int(self.get(option, default))
 
+    def getboolean(self, option, default=MISSING):
+        return self.get(option, default) in (True, "true", "True", "1")
+
     def getfloat(self, option, default=MISSING, minval=None, above=None):
         option_value = float(self.get(option, default))
         if minval is not None and option_value < minval:
@@ -219,6 +222,14 @@ class FakeGCode:
         self.responses.append("// " + message)
 
 
+class FakeTemperatureSensor:
+    def __init__(self, temperature):
+        self.temperature = temperature
+
+    def get_temp(self, eventtime):
+        return self.temperature, 0.
+
+
 class FakeHeater:
     """A watermark heater_generic, as Klipper's heaters.Heater behaves for it."""
 
@@ -256,6 +267,7 @@ class FakeHeaters:
         self.printer = printer
         self.sensor_factories = {}
         self.heaters = {}
+        self.available_sensors = []
 
     def add_sensor_factory(self, sensor_type, sensor_factory):
         self.sensor_factories[sensor_type] = sensor_factory

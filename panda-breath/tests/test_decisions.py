@@ -43,21 +43,31 @@ def test_settings_from_frame_ignores_frames_without_settings(payload):
 def chamber_snapshot(**changes):
     calm_wait = panda_breath_chamber.ChamberWaitSnapshot(
         klipper_shutdown=False, fault_reason="", heater_target=40.,
-        still_heating=True, waited_seconds=10.)
+        target_not_reached=True, waited_seconds=10.)
     return calm_wait._replace(**changes)
 
 
 @pytest.mark.parametrize(("snapshot", "expected_outcome"), [
     (chamber_snapshot(), panda_breath_chamber.KEEP_WAITING),
-    (chamber_snapshot(still_heating=False), panda_breath_chamber.REACHED),
+    (chamber_snapshot(target_not_reached=False), panda_breath_chamber.REACHED),
     (chamber_snapshot(waited_seconds=60.), panda_breath_chamber.TIMED_OUT),
     (chamber_snapshot(heater_target=0.), panda_breath_chamber.CANCELLED),
     (chamber_snapshot(klipper_shutdown=True, fault_reason="x"), panda_breath_chamber.CANCELLED),
     (chamber_snapshot(fault_reason="x", heater_target=0.), panda_breath_chamber.FAULTED),
-    (chamber_snapshot(still_heating=False, waited_seconds=60.), panda_breath_chamber.REACHED),
+    (chamber_snapshot(target_not_reached=False, waited_seconds=60.), panda_breath_chamber.REACHED),
 ])
 def test_wait_outcome_checks_in_order(snapshot, expected_outcome):
     assert panda_breath_chamber.wait_outcome(snapshot, 40., 60.) == expected_outcome
+
+
+@pytest.mark.parametrize(("printer_chamber_temp", "reached"), [
+    (None, False),
+    (39.9, False),
+    (40., True),
+    (41., True),
+])
+def test_printer_chamber_reached_at_the_target(printer_chamber_temp, reached):
+    assert panda_breath_chamber.printer_chamber_reached(printer_chamber_temp, 40.) is reached
 
 
 def test_timeout_message_speaks_minutes():

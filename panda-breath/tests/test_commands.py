@@ -2,10 +2,18 @@
 # SPDX-License-Identifier: GPL-3.0-only
 """The G-code side: HELP texts, M141 and M191, drying and Auto mode on a fake device."""
 
+import functools
+
 import pytest
 from conftest import HEATER_OPTIONS
 from extras import panda_breath_device_fixes
-from klipper_fakes import CommandError, ConfigError, FakeConfig, FakePrinter
+from klipper_fakes import (
+    CommandError,
+    ConfigError,
+    FakeConfig,
+    FakePrinter,
+    FakeTemperatureSensor,
+)
 
 PLUGIN_COMMANDS = (
     "PANDA_BREATH_AUTO",
@@ -20,6 +28,8 @@ SWITCH_OFF_FRAMES = [{"isrunning": 0}, {"work_on": False}]
 DRYING_FRAME_COUNT = 12
 AUTO_FRAME_COUNT = 7
 AUTO_OFF_FRAME_COUNT = 6
+CHAMBER_MAX_TEMP = float(HEATER_OPTIONS["max_temp"])
+U1_CAVITY_SENSOR = "temperature_sensor cavity"
 
 
 def user_m141_macro(gcmd):
@@ -78,10 +88,33 @@ def test_m141_s0_switches_the_device_off(bench):
     assert bench.heater.target_temp == 0.
 
 
-def test_m141_out_of_the_heater_range_is_refused(bench):
+def over_limit_warnings(responses):
+    return [response for response in responses
+            if "⚠️" in response and f"limit is {CHAMBER_MAX_TEMP:g} C" in response]
+
+
+def test_m141_above_the_limit_warns_and_sets_the_limit(bench):
     bench.start()
-    with pytest.raises(CommandError, match="out of range"):
-        bench.run_gcode(f"M141 S{float(HEATER_OPTIONS['max_temp']) + 10:g}")
+    bench.run_gcode(f"M141 S{CHAMBER_MAX_TEMP + 5:g}")
+    assert bench.heater.target_temp == CHAMBER_MAX_TEMP
+    assert len(over_limit_warnings(bench.gcode.responses)) == 1
+
+
+def test_m141_at_the_limit_does_not_warn(bench):
+    bench.start()
+    bench.run_gcode(f"M141 S{CHAMBER_MAX_TEMP:g}")
+    assert bench.heater.target_temp == CHAMBER_MAX_TEMP
+    assert not over_limit_warnings(bench.gcode.responses)
+
+
+def test_m191_above_the_limit_warns_and_waits_for_the_limit(bench):
+    bench.start()
+    started_at = bench.reactor.monotonic()
+    bench.device_frame_after(3., {"warehouse_temper": CHAMBER_MAX_TEMP})
+    bench.run_gcode(f"M191 S{CHAMBER_MAX_TEMP + 5:g}")
+    assert bench.heater.target_temp == CHAMBER_MAX_TEMP
+    assert bench.reactor.monotonic() - started_at >= 3.
+    assert len(over_limit_warnings(bench.gcode.responses)) == 1
 
 
 def test_m191_returns_when_the_chamber_is_warm(bench):
@@ -91,6 +124,46 @@ def test_m191_returns_when_the_chamber_is_warm(bench):
     bench.run_gcode("M191 S40")
     assert bench.heater.target_temp == 40.
     assert bench.reactor.monotonic() - started_at >= 3.
+
+
+def start_with_u1_cavity_thermometer(bench, cavity_temp):
+    cavity_thermometer = FakeTemperatureSensor(cavity_temp)
+    bench.load({"use_u1_cavity_thermometer": "true"})
+    bench.printer.objects[U1_CAVITY_SENSOR] = cavity_thermometer
+    bench.printer.lookup_object("heaters").available_sensors.append(U1_CAVITY_SENSOR)
+    bench.connect()
+    return cavity_thermometer
+
+
+def test_m191_returns_when_the_u1_cavity_gets_there_first(bench):
+    cavity_thermometer = start_with_u1_cavity_thermometer(bench, 20.)
+    started_at = bench.reactor.monotonic()
+    bench.reactor.call_at(
+        started_at + 3., functools.partial(setattr, cavity_thermometer, "temperature", 40.))
+    bench.run_gcode("M191 S40")
+    assert bench.heater.target_temp == 40.
+    assert bench.reactor.monotonic() - started_at >= 3.
+
+
+def test_m191_returns_when_the_panda_breath_gets_there_first(bench):
+    start_with_u1_cavity_thermometer(bench, 20.)
+    started_at = bench.reactor.monotonic()
+    bench.device_frame_after(3., {"warehouse_temper": 40})
+    bench.run_gcode("M191 S40")
+    assert bench.reactor.monotonic() - started_at >= 3.
+
+
+def test_the_u1_cavity_option_on_a_printer_without_one_is_refused_at_connect(bench):
+    bench.load({"use_u1_cavity_thermometer": "true"})
+    with pytest.raises(ConfigError, match="no U1 cavity thermometer"):
+        bench.connect()
+
+
+def test_m191_with_the_u1_cavity_option_off_ignores_the_cavity(bench):
+    bench.start({"heat_wait_timeout": "120"})
+    bench.printer.objects[U1_CAVITY_SENSOR] = FakeTemperatureSensor(40.)
+    with pytest.raises(CommandError, match="within 2 minutes"):
+        bench.run_gcode("M191 S40")
 
 
 def test_m191_s0_returns_at_once(bench):

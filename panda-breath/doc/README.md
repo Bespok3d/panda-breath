@@ -17,9 +17,15 @@ Mainsail (or your slicer) like any other heater.
 | `M141 S45` | Set the chamber to 45 C and go on at once. `M141 S0` switches the heat off. |
 | `M191 S45` | Set the chamber to 45 C and wait until it gets there. `M191 S0` switches off and goes on. |
 
+A target above the heater's `max_temp` (60 C) does not stop the print. The console shows a ⚠️
+warning, and the chamber is set to 60 C.
+
 If your printer config already has its own `M141` or `M191` macro, the plugin keeps yours. Remove
 your macro if you want the plugin's version. A macro with `rename_existing` wraps the plugin's
 version instead.
+
+**Also use the U1 cavity thermometer** (Snapmaker U1 only, off by default): when on, `M191` goes on
+as soon as the Panda Breath or the U1 cavity thermometer reaches the target, whichever is first.
 
 `M191` gives up after 30 minutes (set `heat_wait_timeout`, in seconds). Then it switches the heat
 off and stops with a plain error.

@@ -31,6 +31,12 @@
         "name": "PANDA_HOST",
         "description": "Hostname or IP of the Panda Breath device",
         "required": true
+      },
+      {
+        "name": "USE_U1_CAVITY_THERMOMETER",
+        "description": "Snapmaker U1 only: M191 also goes on when the U1 cavity thermometer reaches the target (true) or waits for the Panda Breath only (false)",
+        "required": false,
+        "default": "false"
       }
     ]
   },
@@ -48,6 +54,16 @@
       "label": "Port",
       "type": "number",
       "default": "80",
+      "userEditable": true
+    },
+    {
+      "key": "USE_U1_CAVITY_THERMOMETER",
+      "label": "Also use the U1 cavity thermometer",
+      "type": "toggle",
+      "onValue": "true",
+      "offValue": "false",
+      "default": "false",
+      "hint": "Snapmaker U1 only. On: M191 goes on as soon as the Panda Breath or the U1 cavity thermometer reaches the target, whichever is first. Off: only the Panda Breath counts.",
       "userEditable": true
     }
   ],
