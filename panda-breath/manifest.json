@@ -1,7 +1,7 @@
 {
   "name": "panda-breath",
   "title": "Panda Breath",
-  "version": "0.2.0",
+  "version": "0.2.0-pre",
   "license": "https://github.com/Bespok3d/panda-breath/blob/dev/panda-breath/doc/LICENSE",
   "author": "bespoked",
   "description": "Drives a BIQU Panda Breath chamber-heating device as a standard Klipper heater. Adds Klipper extras (panda_breath.py and its guard) that talk to the Panda Breath over its OEM WebSocket protocol, plus a [heater_generic] so you control chamber heat from the web UI and slicer like any other heater, with M141/M191, device alarms as Klipper errors, and a watchdog that switches the device off when Klipper or the link fails. Point it at your Panda Breath's host. The Panda Breath hardware is separate.",
