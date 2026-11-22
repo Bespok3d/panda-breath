@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (C) 2026 unlucio and the Bespok3d contributors
 # SPDX-License-Identifier: GPL-3.0-only
 # This plugin's own gate: it must pass from this repo's root, with no sibling repo cloned except
-# lib_bespok3d. This repo ships config, assets and shell only, so its gate is the shared detectors.
+# lib_bespok3d. Exits non-zero on any failure.
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -25,8 +25,17 @@ fi
 
 cd "$REPO_ROOT" || exit 1
 
+PLUGIN_DIR="$REPO_ROOT/panda-breath"
+# The vendored upstream module keeps its own style so a re-vendor stays a plain copy.
+VENDORED_MODULE="files/klipper/klippy/extras/panda_breath.py"
+
 echo ""
 echo "panda-breath-plugin gate"
+
+b3d_python_tools
+
+run_check "pytest" pytest_in_dir "$PLUGIN_DIR" tests
+run_check "ruff" ruff_in_dir "$PLUGIN_DIR" --extend-exclude "$VENDORED_MODULE" files tests
 
 release_trigger_check "$REPO_ROOT"
 manifest_origin_check "$REPO_ROOT"

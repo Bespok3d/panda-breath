@@ -1,17 +1,17 @@
 {
   "name": "panda-breath",
   "title": "Panda Breath",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "license": "https://github.com/Bespok3d/panda-breath/blob/dev/panda-breath/doc/LICENSE",
   "author": "bespoked",
-  "description": "Drives a BIQU Panda Breath chamber-heating device as a standard Klipper heater. Adds a Klipper extra (panda_breath.py) that talks to the Panda Breath over its OEM WebSocket protocol, plus a [heater_generic] so you control chamber heat from the web UI and slicer like any other heater. Point it at your Panda Breath's host. The Panda Breath hardware is separate. Experimental: we have no Panda Breath to test against, so it is unproven on the real device.",
+  "description": "Drives a BIQU Panda Breath chamber-heating device as a standard Klipper heater. Adds Klipper extras (panda_breath.py and its guard) that talk to the Panda Breath over its OEM WebSocket protocol, plus a [heater_generic] so you control chamber heat from the web UI and slicer like any other heater, with M141/M191, device alarms as Klipper errors, and a watchdog that switches the device off when Klipper or the link fails. Point it at your Panda Breath's host. The Panda Breath hardware is separate.",
   "tagline": "Chamber heating with a BIQU Panda Breath, as a Klipper heater.",
   "category": "sensors",
-  "channel": "testing",
+  "channel": "stable",
   "printer_specific": false,
   "changelog": "doc/CHANGELOG.md",
   "published_at": "2026-06-09",
-  "updated_at": "2026-07-28",
+  "updated_at": "2026-11-21",
   "source": "https://github.com/Bespok3d/panda-breath",
   "homepage": "https://github.com/justinh-rahb/pandabreath-klipper",
   "publisher": "PLACEHOLDER",
@@ -61,6 +61,26 @@
       {
         "class": "klipper-extra",
         "src": "files/klipper/klippy/extras/panda_breath.py"
+      },
+      {
+        "class": "klipper-extra",
+        "src": "files/klipper/klippy/extras/panda_breath_alarms.py"
+      },
+      {
+        "class": "klipper-extra",
+        "src": "files/klipper/klippy/extras/panda_breath_chamber.py"
+      },
+      {
+        "class": "klipper-extra",
+        "src": "files/klipper/klippy/extras/panda_breath_device_fixes.py"
+      },
+      {
+        "class": "klipper-extra",
+        "src": "files/klipper/klippy/extras/panda_breath_guard.py"
+      },
+      {
+        "class": "klipper-extra",
+        "src": "files/klipper/klippy/extras/panda_breath_watchdog.py"
       },
       {
         "class": "klipper-config",
