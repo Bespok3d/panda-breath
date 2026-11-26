@@ -43,6 +43,7 @@ class FakeConfig:
 
     def get(self, option, default=MISSING):
         if option in self.section_options:
+            self.printer.read_options.add((self.section_name, option))
             return self.section_options[option]
         if default is MISSING:
             raise ConfigError(
@@ -62,6 +63,18 @@ class FakeConfig:
         if above is not None and option_value <= above:
             raise ConfigError(f"Option '{option}' must be above {above}")
         return option_value
+
+    def getchoice(self, option, choices, default=MISSING):
+        chosen = self.get(option, default)
+        if chosen not in choices:
+            raise ConfigError(
+                f"Choice '{chosen}' for option '{option}' in section '{self.section_name}'"
+                " is not a valid choice")
+        return choices[chosen]
+
+    def unread_options(self):
+        return {option for option in self.section_options
+                if (self.section_name, option) not in self.printer.read_options}
 
     def get_prefix_sections(self, prefix):
         return [
@@ -307,6 +320,8 @@ class FakePins:
 class FakePrinter:
     def __init__(self, sections):
         self.sections = sections
+        # Klipper refuses to start on a set option no module read (configfile.check_unused_options).
+        self.read_options = set()
         self.reactor = FakeReactor()
         self.event_handlers = {}
         self.command_error = CommandError

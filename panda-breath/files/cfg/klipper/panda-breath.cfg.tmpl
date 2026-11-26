@@ -5,6 +5,8 @@ port: $PANDA_PORT
 
 [panda_breath_guard]
 use_u1_cavity_thermometer: $USE_U1_CAVITY_THERMOMETER
+wait_limit: $M191_WAIT_LIMIT
+wait_limit_minutes: $M191_WAIT_LIMIT_MINUTES
 
 [heater_generic panda_breath]
 heater_pin: panda_breath:pwm
@@ -17,6 +19,6 @@ max_temp: 60
 # Klipper always runs its "not heating at expected rate" check on a heater. With the slicer's
 # chamber fan on, the Panda Breath reading can stay still or drop for minutes while it heats, and
 # that check then shuts the printer down mid-print. A hysteresis as wide as max_temp - min_temp
-# means it never counts; the device alarms, the watchdog and the M191 timeout cover real faults.
+# means it never counts; the device alarms and the watchdog cover real faults.
 [verify_heater panda_breath]
 hysteresis: 45

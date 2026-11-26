@@ -71,9 +71,18 @@ def test_printer_chamber_reached_at_the_target(printer_chamber_temp, reached):
 
 
 def test_timeout_message_speaks_minutes():
-    assert panda_breath_chamber.timeout_message(40., 120.) == (
+    assert panda_breath_chamber.timeout_message(40., 2.) == (
         "Panda Breath: the chamber did not reach 40 C within 2 minutes. Heating stopped")
-    assert "within 0.5 minutes" in panda_breath_chamber.timeout_message(40., 30.)
+    assert "within 0.5 minutes" in panda_breath_chamber.timeout_message(40., 0.5)
+
+
+@pytest.mark.parametrize(("wait_limit_action", "expected_seconds"), [
+    (panda_breath_chamber.NO_WAIT_LIMIT, float("inf")),
+    (panda_breath_chamber.WARN_AT_WAIT_LIMIT, 120.),
+    (panda_breath_chamber.STOP_AT_WAIT_LIMIT, 120.),
+])
+def test_wait_limit_seconds_follows_the_chosen_action(wait_limit_action, expected_seconds):
+    assert panda_breath_chamber.wait_limit_seconds(wait_limit_action, 2.) == expected_seconds
 
 
 def test_distinct_faults_keeps_arrival_order_without_repeats():

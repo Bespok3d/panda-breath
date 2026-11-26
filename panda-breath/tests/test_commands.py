@@ -30,6 +30,8 @@ AUTO_FRAME_COUNT = 7
 AUTO_OFF_FRAME_COUNT = 6
 CHAMBER_MAX_TEMP = float(HEATER_OPTIONS["max_temp"])
 U1_CAVITY_SENSOR = "temperature_sensor cavity"
+STOP_AFTER_2_MINUTES = {"wait_limit": "stop", "wait_limit_minutes": "2"}
+SLOW_WARM_UP_SECONDS = 45 * 60.
 
 
 def user_m141_macro(gcmd):
@@ -160,7 +162,7 @@ def test_the_u1_cavity_option_on_a_printer_without_one_is_refused_at_connect(ben
 
 
 def test_m191_with_the_u1_cavity_option_off_ignores_the_cavity(bench):
-    bench.start({"heat_wait_timeout": "120"})
+    bench.start(STOP_AFTER_2_MINUTES)
     bench.printer.objects[U1_CAVITY_SENSOR] = FakeTemperatureSensor(40.)
     with pytest.raises(CommandError, match="within 2 minutes"):
         bench.run_gcode("M191 S40")
@@ -174,11 +176,61 @@ def test_m191_s0_returns_at_once(bench):
     assert bench.heater.target_temp == 0.
 
 
-def test_m191_gives_up_and_stops_heating_after_the_timeout(bench):
-    bench.start({"heat_wait_timeout": "120"})
+def test_m191_without_a_wait_limit_waits_until_the_chamber_is_warm(bench):
+    """Junior, cold room: the chamber reached 55 C just after the old fixed 30 minutes."""
+    bench.start()
+    started_at = bench.reactor.monotonic()
+    bench.device_frame_after(SLOW_WARM_UP_SECONDS, {"warehouse_temper": 40})
+    bench.run_gcode("M191 S40")
+    assert bench.reactor.monotonic() - started_at >= SLOW_WARM_UP_SECONDS
+    assert bench.heater.target_temp == 40.
+
+
+def slow_heating_warnings(responses):
+    return [response for response in responses
+            if "⚠️" in response and "the print goes on" in response]
+
+
+def test_m191_warn_limit_warns_keeps_heating_and_lets_the_print_go_on(bench):
+    bench.start({"wait_limit": "warn", "wait_limit_minutes": "2"})
+    started_at = bench.reactor.monotonic()
+    bench.run_gcode("M191 S40")
+    assert bench.reactor.monotonic() - started_at >= 120.
+    assert bench.heater.target_temp == 40.
+    warnings = slow_heating_warnings(bench.gcode.responses)
+    assert len(warnings) == 1
+    assert warnings[0].startswith("// ")
+
+
+def test_m191_stop_limit_stops_heating_and_the_print(bench):
+    bench.start(STOP_AFTER_2_MINUTES)
     with pytest.raises(CommandError, match="within 2 minutes. Heating stopped"):
         bench.run_gcode("M191 S40")
     assert bench.heater.target_temp == 0.
+
+
+def guard_section(bench):
+    guard_options = bench.printer.sections["panda_breath_guard"]
+    return FakeConfig(bench.printer, "panda_breath_guard", guard_options)
+
+
+@pytest.mark.parametrize("unused_minutes", ["", "0"])
+def test_with_the_wait_limit_off_unused_minutes_do_not_stop_klipper(bench, unused_minutes):
+    bench.load({"wait_limit": "off", "wait_limit_minutes": unused_minutes})
+    assert not guard_section(bench).unread_options()
+
+
+def test_the_old_heat_wait_timeout_option_does_not_stop_klipper(bench):
+    bench.start({"heat_wait_timeout": "120"})
+    assert not guard_section(bench).unread_options()
+    bench.device_frame_after(SLOW_WARM_UP_SECONDS, {"warehouse_temper": 40})
+    bench.run_gcode("M191 S40")
+    assert bench.heater.target_temp == 40.
+
+
+def test_an_unknown_wait_limit_choice_is_refused(bench):
+    with pytest.raises(ConfigError, match="not a valid choice"):
+        bench.load({"wait_limit": "maybe"})
 
 
 def test_m191_stops_on_a_device_alarm(bench):

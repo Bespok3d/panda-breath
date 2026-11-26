@@ -21,7 +21,7 @@ from . import (
 GUARD_TICK_SECONDS = 1.
 DEFAULT_HANG_TIMEOUT = 15.
 DEFAULT_LINK_TIMEOUT = 30.
-DEFAULT_HEAT_WAIT_TIMEOUT = 1800.
+DEFAULT_WAIT_LIMIT_MINUTES = 30.
 # The guard beats once a second and the watchdog checks once a second, so a shorter hang limit
 # would mistake a busy moment for a hang.
 MIN_HANG_TIMEOUT = 5.
@@ -97,8 +97,21 @@ class PandaBreathGuard:
             "hang_timeout", DEFAULT_HANG_TIMEOUT, minval=MIN_HANG_TIMEOUT)
         self.link_timeout = config.getfloat(
             "link_timeout", DEFAULT_LINK_TIMEOUT, minval=MIN_LINK_TIMEOUT)
-        self.heat_wait_timeout = config.getfloat(
-            "heat_wait_timeout", DEFAULT_HEAT_WAIT_TIMEOUT, above=0.)
+        self.wait_limit_action = config.getchoice(
+            "wait_limit", panda_breath_chamber.WAIT_LIMIT_ACTIONS,
+            panda_breath_chamber.NO_WAIT_LIMIT)
+        self.wait_limit_minutes = self._read_wait_limit_minutes(config)
+        self.wait_limit_seconds = panda_breath_chamber.wait_limit_seconds(
+            self.wait_limit_action, self.wait_limit_minutes)
+        # 0.2.0 documented this option; Klipper refuses to start on an option nobody reads.
+        config.get("heat_wait_timeout", None)
+
+    def _read_wait_limit_minutes(self, config):
+        """With the limit off the minutes are unused, so a blank or 0 must not stop Klipper."""
+        if self.wait_limit_action == panda_breath_chamber.NO_WAIT_LIMIT:
+            config.get("wait_limit_minutes", None)
+            return DEFAULT_WAIT_LIMIT_MINUTES
+        return config.getfloat("wait_limit_minutes", DEFAULT_WAIT_LIMIT_MINUTES, above=0.)
 
     def _register_commands(self):
         """The vendored module registers its commands without a help text, so HELP hides them."""
@@ -259,7 +272,7 @@ class PandaBreathGuard:
             target_not_reached=self._chamber_target_not_reached(eventtime, wanted_target),
             waited_seconds=eventtime - started_at,
         )
-        return panda_breath_chamber.wait_outcome(snapshot, wanted_target, self.heat_wait_timeout)
+        return panda_breath_chamber.wait_outcome(snapshot, wanted_target, self.wait_limit_seconds)
 
     def _chamber_target_not_reached(self, eventtime, wanted_target):
         """The wait ends when the Panda Breath or the printer's own thermometer gets there first."""
@@ -277,9 +290,14 @@ class PandaBreathGuard:
             raise self.printer.command_error(fault_message(self.fault_reason))
         if outcome != panda_breath_chamber.TIMED_OUT:
             return
+        if self.wait_limit_action == panda_breath_chamber.WARN_AT_WAIT_LIMIT:
+            # Not the "!!" error prefix: OctoPrint disconnects on it, and the print stops.
+            self.gcode.respond_info(
+                panda_breath_chamber.slow_heating_warning(wanted_target, self.wait_limit_minutes))
+            return
         self.pheaters.set_temperature(self.heater, 0.)
         raise self.printer.command_error(
-            panda_breath_chamber.timeout_message(wanted_target, self.heat_wait_timeout))
+            panda_breath_chamber.timeout_message(wanted_target, self.wait_limit_minutes))
 
     def get_status(self, eventtime):
         return {"fault": bool(self.fault_reason), "fault_reason": self.fault_reason}

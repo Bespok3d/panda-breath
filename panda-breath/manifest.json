@@ -1,7 +1,7 @@
 {
   "name": "panda-breath",
   "title": "Panda Breath",
-  "version": "0.2.0-pre",
+  "version": "0.3.0-pre",
   "license": "https://github.com/Bespok3d/panda-breath/blob/dev/panda-breath/doc/LICENSE",
   "author": "bespoked",
   "description": "Drives a BIQU Panda Breath chamber-heating device as a standard Klipper heater. Adds Klipper extras (panda_breath.py and its guard) that talk to the Panda Breath over its OEM WebSocket protocol, plus a [heater_generic] so you control chamber heat from the web UI and slicer like any other heater, with M141/M191, device alarms as Klipper errors, and a watchdog that switches the device off when Klipper or the link fails. Point it at your Panda Breath's host. The Panda Breath hardware is separate.",
@@ -11,7 +11,7 @@
   "printer_specific": false,
   "changelog": "doc/CHANGELOG.md",
   "published_at": "2026-06-09",
-  "updated_at": "2026-11-21",
+  "updated_at": "2026-11-25",
   "source": "https://github.com/Bespok3d/panda-breath",
   "homepage": "https://github.com/justinh-rahb/pandabreath-klipper",
   "publisher": "PLACEHOLDER",
@@ -64,6 +64,28 @@
       "offValue": "false",
       "default": "false",
       "hint": "Snapmaker U1 only. On: M191 goes on as soon as the Panda Breath or the U1 cavity thermometer reaches the target, whichever is first. Off: only the Panda Breath counts.",
+      "userEditable": true
+    },
+    {
+      "key": "M191_WAIT_LIMIT",
+      "label": "If M191 waits too long",
+      "type": "select",
+      "options": [
+        "off",
+        "warn",
+        "stop"
+      ],
+      "default": "off",
+      "hint": "off: M191 waits until the chamber is warm, however long it takes. warn: after the minutes below, the console shows a warning, the Panda Breath keeps heating and the print goes on. stop: after the minutes below, the heat goes off and the print stops.",
+      "userEditable": true
+    },
+    {
+      "key": "M191_WAIT_LIMIT_MINUTES",
+      "label": "M191 wait limit, minutes",
+      "type": "number",
+      "default": "30",
+      "hint": "Used only when \"If M191 waits too long\" is warn or stop.",
+      "required": true,
       "userEditable": true
     }
   ],

@@ -27,8 +27,10 @@ version instead.
 **Also use the U1 cavity thermometer** (Snapmaker U1 only, off by default): when on, `M191` goes on
 as soon as the Panda Breath or the U1 cavity thermometer reaches the target, whichever is first.
 
-`M191` gives up after 30 minutes (set `heat_wait_timeout`, in seconds). Then it switches the heat
-off and stops with a plain error.
+**If M191 waits too long** (off by default): off, `M191` waits until the chamber is warm, however
+long it takes, like Klipper's own heater waits. `warn`: after **M191 wait limit, minutes** (30 by
+default), the console shows a ⚠️ warning, the Panda Breath keeps heating and the print goes on.
+`stop`: after those minutes, the heat goes off and the print stops with a plain error.
 
 **Warning, OrcaSlicer:** the filament's chamber **Minimal** temperature does nothing. Orca waits
 for the **Target** temperature (`M191 S<target>`) before it prints. To start printing at a lower
@@ -68,13 +70,12 @@ All of them show in Klipper's `HELP` list.
   Klipper's "not heating at expected rate" check is set so it never stops the printer for that.
   The checks above still stop a real fault.
 
-The three timeouts go in the `[panda_breath_guard]` section, in seconds:
+The two timeouts go in the `[panda_breath_guard]` section, in seconds:
 
 ```ini
 [panda_breath_guard]
 hang_timeout: 15
 link_timeout: 30
-heat_wait_timeout: 1800
 ```
 
 The shortest allowed values are 5 for `hang_timeout` and 25 for `link_timeout`. Shorter would

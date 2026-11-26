@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0
+
+- Fix: a slow warm up no longer stops the print. Before, `M191` gave up after 30 minutes, switched
+  the heat off and stopped the print, even when the chamber was still warming. Now it waits until the
+  chamber is warm, like Klipper's own heater waits.
+- New: the **If M191 waits too long** setting (off by default) and **M191 wait limit, minutes** (30
+  by default). Choose `warn` to get a warning and keep printing while the chamber keeps heating, or
+  `stop` to switch the heat off and stop the print.
+- The `heat_wait_timeout` line in `[panda_breath_guard]` no longer does anything. Use the settings
+  above instead.
+
 ## 0.2.0
 
 - New: `M141` and `M191` set the chamber temperature from your slicer's start G-code. `M191` waits
